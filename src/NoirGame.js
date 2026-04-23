@@ -1,408 +1,259 @@
 import { useState, useEffect } from "react";
 
 // ═══════════════════════════════════════════════════════
-// GAME DATA: 백색의 밀실 (설화장)
+// GAME DATA: 백색의 밀실 V3.0 (퍼즐 & 인벤토리 시스템 도입)
 // ═══════════════════════════════════════════════════════
 
-const LOCATIONS = {
-  study: {
-    id: "study", name: "산장 주인의 서재", icon: "📖",
-    desc: "안에서 굳게 잠겨 있던 밀실. 펄펄 끓는 온풍기 열기와 피비린내가 섞여 있다.",
-    bg: "#0d131c",
-    hotspots: [
-      { id: "body", x: 45, y: 55, label: "주인의 시신", icon: "💀" },
-      { id: "heater", x: 20, y: 40, label: "온풍기", icon: "♨️" },
-      { id: "window", x: 80, y: 35, label: "깨진 창문", icon: "🪟" },
-      { id: "desk", x: 60, y: 65, label: "서재 책상", icon: "📜" },
-    ],
-  },
-  living_room: {
-    id: "living_room", name: "산장 거실", icon: "🛋️",
-    desc: "용의자들이 모여 있는 1층 거실. 벽난로가 켜져 있지만 냉기가 감돈다.",
-    bg: "#121824",
-    hotspots: [
-      { id: "fireplace", x: 50, y: 25, label: "벽난로", icon: "🔥" },
-      { id: "coat_rack", x: 25, y: 50, label: "외투 걸이", icon: "🧥" },
-      { id: "table", x: 70, y: 65, label: "응접 테이블", icon: "☕" },
-    ],
-  },
-  outside: {
-    id: "outside", name: "서재 밖 눈밭", icon: "❄️",
-    desc: "폭설이 내린 산장 외부. 서재 창문 바로 아래쪽 눈밭이다.",
-    bg: "#0a0f17",
-    hotspots: [
-      { id: "snow", x: 50, y: 75, label: "새하얀 눈밭", icon: "⛄" },
-      { id: "glass_shards", x: 40, y: 45, label: "유리 파편", icon: "💎" },
-      { id: "rope_scrap", x: 65, y: 50, label: "나뭇가지", icon: "🌿" },
-    ],
-  },
-};
-
-const CLUES = {
-  // 서재
-  body: {
-    id: "body", location: "study", title: "열쇠와 시신", icon: "💀",
-    short: "방문 열쇠는 주머니에. 전형적인 밀실.",
-    detail: "방은 안에서 잠겨 있었고 열쇠는 피해자 주머니에 있다. 외상은 없고 독살 혹은 질식으로 추정된다.",
-    weight: { 박관리인: 0, 최동업: 0 },
-  },
-  heater: {
-    id: "heater", location: "study", title: "최대치로 켜진 온풍기", icon: "♨️",
-    short: "실내 온도가 비정상적으로 높다.",
-    detail: "겨울 산장임을 감안해도 숨이 막힐 정도다. 무언가를 빨리 '녹이거나' 증발시키려 했던 흔적일까?",
-    weight: { 박관리인: 2, 최동업: 0 },
-  },
-  window: {
-    id: "window", location: "study", title: "깨진 창문", icon: "🪟",
-    short: "창문이 깨져 찬바람이 들어온다.",
-    detail: "유일하게 외부와 통하는 창문. 외부 침입의 흔적처럼 보이지만 어색한 점이 있다.",
-    weight: { 박관리인: 1, 최동업: 0 },
-  },
-  desk: {
-    id: "desk", location: "study", title: "찢어진 매각 계약서", icon: "📜",
-    short: "산장 매각 계약서가 찢겨 있다.",
-    detail: "피해자가 최근 이 산장을 처분하려 했다는 서류. 누군가는 이 산장이 넘어가는 것을 극도로 꺼렸다.",
-    weight: { 박관리인: 3, 최동업: 2 },
-  },
-  // 외부
-  snow: {
-    id: "snow", location: "outside", title: "발자국 없는 눈밭", icon: "⛄",
-    short: "서재 창문 밖 눈밭에는 발자국이 전혀 없다.",
-    detail: "어젯밤 10시 이후로 눈이 그쳤다. 범인이 창문으로 탈출했다면 반드시 눈밭에 발자국이 남아야만 한다.",
-    weight: { 박관리인: 0, 최동업: 0 },
-  },
-  glass_shards: {
-    id: "glass_shards", location: "outside", title: "외부로 흩어진 파편", icon: "💎",
-    short: "유리 파편이 방 안이 아닌 바깥에 떨어져 있다.",
-    detail: "결정적 모순이다. 외부 침입자가 유리를 깨고 들어왔다면 파편은 방 안에 있어야 한다. 창문은 '안에서 밖으로' 깨졌다.",
-    weight: { 박관리인: 2, 최동업: 0 },
-  },
-  rope_scrap: {
-    id: "rope_scrap", location: "outside", title: "젖은 밧줄 조각", icon: "🌿",
-    short: "창틀 밖 나뭇가지에 걸린 젖은 나일론 밧줄.",
-    detail: "날카로운 유리에 쓸려 끊어진 듯한 고강도 산악용 로프. 이상하게도 얼음물이 흠뻑 배어 있다.",
-    weight: { 박관리인: 4, 최동업: 0 },
-  },
-  // 거실 (누락되었던 버그 수정 부분)
-  coat_rack: {
-    id: "coat_rack", location: "living_room", title: "젖은 등산화", icon: "🧥",
-    short: "박 관리인의 등산화가 젖어 있다.",
-    detail: "눈이 그친 뒤 누군가 밖을 돌아다녔다는 증거. 박 관리인은 실내에만 있었다고 증언했다.",
-    weight: { 박관리인: 3, 최동업: 0 },
-  },
-  fireplace: {
-    id: "fireplace", location: "living_room", title: "타다 남은 종이", icon: "🔥",
-    short: "벽난로에서 발견된 횡령 관련 장부 조각.",
-    detail: "누군가 증거를 급하게 태우려 했다. 피해자와 다투던 동업자 최 대표의 서명란이 살짝 보인다.",
-    weight: { 박관리인: 0, 최동업: 4 },
-  },
-  table: {
-    id: "table", location: "living_room", title: "빈 찻잔 두 개", icon: "☕",
-    short: "간밤에 두 사람이 마주 앉아 차를 마신 흔적.",
-    detail: "관리인 박씨와 피해자가 늦은 밤까지 대화를 나눴다는 증거. 관리인은 밤새 혼자 있었다고 했다.",
-    weight: { 박관리인: 2, 최동업: 0 },
-  }
-};
-
 const SUSPECTS = [
-  {
-    id: "박관리인", name: "박 씨", role: "산장 관리인, 60대", avatar: "🧔",
-    bg: "rgba(40,60,80,0.15)", border: "rgba(100,150,200,0.4)",
-    isKiller: true,
-    profile: "30년 전 산장 공사 때 아들을 잃고 이 산장을 관리해왔다. 로프를 다루는 산악 구조대 출신.",
-  },
-  {
-    id: "최동업", name: "최 대표", role: "동업자, 40대", avatar: "🕴",
-    bg: "rgba(80,40,40,0.15)", border: "rgba(200,100,100,0.4)",
-    isKiller: false,
-    profile: "피해자의 사업 파트너. 최근 거액의 공금 횡령 문제로 피해자와 격렬하게 다투었다.",
-  }
+  { id: "박관리인", name: "박 씨", role: "산장 관리인, 60대", avatar: "🧔", profile: "1996년, 산장 공사 때 아들을 잃고 이 산장을 관리해왔다. 산악용 로프를 다루는 기술이 뛰어나다." },
+  { id: "최동업", name: "최 대표", role: "동업자, 40대", avatar: "🕴", profile: "피해자의 오랜 파트너. 최근 회사의 거액 공금을 빼돌린 혐의를 받고 있다." },
+  { id: "이지윤", name: "이 양", role: "의붓딸, 20대", avatar: "👩", profile: "피해자와 사이가 극도로 나빴으며, 산장이 매각되면 유산을 한 푼도 받지 못할 위기였다." },
+  { id: "조난객", name: "김태혁", role: "불청객, 30대", avatar: "🎒", profile: "폭설로 우연히 산장에 들어왔다고 주장하는 등산객. 하지만 그의 배낭엔 피해자의 젊은 시절 사진이 있다." }
 ];
 
-// 평면도(Blueprint)를 그려주는 컴포넌트
-const FloorPlan = ({ locationId }) => {
-  if (locationId === "study") {
-    return (
-      <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0, opacity: 0.2, pointerEvents: 'none' }}>
-        {/* 방 테두리 */}
-        <rect x="15%" y="15%" width="70%" height="70%" fill="none" stroke="#8bb3d4" strokeWidth="2" strokeDasharray="5,5" />
-        {/* 책상 */}
-        <rect x="55%" y="55%" width="15%" height="20%" fill="none" stroke="#8bb3d4" strokeWidth="1" />
-        {/* 온풍기 */}
-        <rect x="15%" y="35%" width="10%" height="10%" fill="none" stroke="#8bb3d4" strokeWidth="1" />
-        {/* 창문 */}
-        <line x1="85%" y1="25%" x2="85%" y2="45%" stroke="#8bb3d4" strokeWidth="4" />
-        {/* 문 */}
-        <line x1="15%" y1="80%" x2="25%" y2="85%" stroke="#992222" strokeWidth="2" />
-        <text x="18%" y="22%" fill="#8bb3d4" fontSize="12" fontFamily="monospace">STUDY ROOM</text>
-      </svg>
-    );
-  }
-  if (locationId === "living_room") {
-    return (
-      <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0, opacity: 0.2, pointerEvents: 'none' }}>
-        <rect x="10%" y="10%" width="80%" height="80%" fill="none" stroke="#8bb3d4" strokeWidth="2" />
-        {/* 벽난로 */}
-        <rect x="40%" y="10%" width="20%" height="10%" fill="none" stroke="#ffaa00" strokeWidth="2" />
-        {/* 테이블 */}
-        <circle cx="70%" cy="65%" r="8%" fill="none" stroke="#8bb3d4" strokeWidth="1" />
-        {/* 외투 걸이 구역 */}
-        <rect x="10%" y="40%" width="10%" height="20%" fill="none" stroke="#8bb3d4" strokeWidth="1" />
-        <text x="15%" y="18%" fill="#8bb3d4" fontSize="12" fontFamily="monospace">LIVING ROOM / LOBBY</text>
-      </svg>
-    );
-  }
-  return (
-    <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0, opacity: 0.2, pointerEvents: 'none' }}>
-      {/* 산장 외벽 */}
-      <line x1="20%" y1="0%" x2="20%" y2="100%" stroke="#8bb3d4" strokeWidth="3" />
-      {/* 나무들 */}
-      <circle cx="65%" cy="50%" r="5%" fill="none" stroke="#8bb3d4" strokeWidth="1" strokeDasharray="3,3" />
-      <circle cx="50%" cy="75%" r="4%" fill="none" stroke="#8bb3d4" strokeWidth="1" strokeDasharray="3,3" />
-      <text x="25%" y="10%" fill="#8bb3d4" fontSize="12" fontFamily="monospace">OUTSIDE (BLIZZARD)</text>
-    </svg>
-  );
+const HOTSPOTS = [
+  // 외부 눈밭
+  { id: "snow", x: 25, y: 15, label: "발자국 없는 눈밭", icon: "⛄", type: "clue" },
+  { id: "glass", x: 45, y: 25, label: "외부로 흩어진 유리", icon: "💎", type: "clue" },
+  { id: "rope", x: 75, y: 20, label: "젖은 밧줄 (동선 끝)", icon: "🌿", type: "clue" },
+  
+  // 서재 (밀실)
+  { id: "body", x: 25, y: 75, label: "피해자 시신", icon: "💀", type: "clue" },
+  { id: "heater", x: 15, y: 55, label: "MAX 온풍기", icon: "♨️", type: "clue" },
+  { id: "safe", x: 12, y: 90, label: "다이얼 금고", icon: "🔒", type: "puzzle", puzzleAnswer: "1996", hint: "금고에 힌트가 적혀있다: '내 아들이 죽고, 이 슬픈 산장이 세워진 해'" },
+  { id: "drawer", x: 40, y: 65, label: "잠긴 서랍", icon: "🗄️", type: "locked", reqItem: "은열쇠", lockMsg: "서랍이 굳게 잠겨있다. 작은 열쇠구멍이 보인다." },
+  
+  // 거실
+  { id: "coat", x: 60, y: 55, label: "박씨의 외투", icon: "🧥", type: "item", itemGranted: "은열쇠", itemMsg: "주머니를 뒤져 [은열쇠]를 획득했다!" },
+  { id: "fireplace", x: 75, y: 45, label: "타다만 종이", icon: "🔥", type: "clue" },
+  { id: "bag", x: 90, y: 85, label: "등산객의 가방", icon: "🎒", type: "clue" },
+];
+
+const CLUES_DATA = {
+  snow: { title: "발자국 없는 눈밭", short: "서재 창문 밖 눈밭에는 탈출한 발자국이 없다." },
+  glass: { title: "외부로 흩어진 파편", short: "창문 유리가 '안에서 밖으로' 깨졌다." },
+  rope: { title: "젖은 밧줄 조각", short: "나무에 걸려있던 날카롭게 끊어진 젖은 나일론 로프." },
+  body: { title: "밀실 속 시신", short: "방문 열쇠는 주머니에. 외상 없는 전형적 밀실." },
+  heater: { title: "펄펄 끓는 온풍기", short: "실내 온도가 비정상적으로 높다. 무언가 녹이려 한 흔적." },
+  safe: { title: "금고 속 횡령 장부", short: "최 대표가 회삿돈을 빼돌린 완벽한 증거 서류." },
+  drawer: { title: "매각 계약서", short: "피해자가 산장을 팔려던 서류. 누군가의 강한 원한 동기." },
+  fireplace: { title: "태우려던 유서", short: "벽난로에서 발견된 의붓딸의 필적. '다 부숴버리겠어'." },
+  bag: { title: "복수자의 가방", short: "등산객 배낭에서 발견된 독극물 병 (사용되진 않음)." }
 };
 
-// CSS 스타일링
+// SVG 원뷰 도면 컴포넌트
+const BlueprintMap = () => (
+  <svg width="100%" height="100%" viewBox="0 0 1000 600" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+    {/* 외부 눈밭 */}
+    <rect x="50" y="30" width="900" height="180" fill="#05101a" stroke="#2b5278" strokeWidth="2" strokeDasharray="10,5" />
+    <text x="70" y="60" fill="#2b5278" fontSize="24" fontFamily="monospace" fontWeight="bold">EXTERIOR / BLIZZARD</text>
+    
+    {/* 서재 (밀실) */}
+    <rect x="50" y="250" width="400" height="320" fill="#081424" stroke="#5cb8ff" strokeWidth="4" />
+    <text x="70" y="290" fill="#5cb8ff" fontSize="28" fontWeight="bold">서재 (LOCKED ROOM)</text>
+    <path d="M 450 350 L 450 450" stroke="#ff4444" strokeWidth="6" /> {/* 잠긴 문 표시 */}
+    
+    {/* 거실 */}
+    <rect x="500" y="250" width="450" height="320" fill="#081424" stroke="#5cb8ff" strokeWidth="2" />
+    <text x="520" y="290" fill="#5cb8ff" fontSize="28" fontWeight="bold">거실 (LOBBY)</text>
+    
+    {/* 창문과 탈출 동선 (가설) */}
+    <rect x="250" y="240" width="100" height="20" fill="#5cb8ff" />
+    <text x="260" y="230" fill="#5cb8ff" fontSize="14">깨진 창문</text>
+    
+    {/* 붉은색 점선 동선 */}
+    <path d="M 300 240 Q 400 120 750 120" fill="none" stroke="#ff4444" strokeWidth="3" strokeDasharray="8,8" />
+    <circle cx="750" cy="120" r="6" fill="#ff4444" />
+    <text x="450" y="100" fill="#ff4444" fontSize="16" fontWeight="bold">트릭을 이용한 추정 탈출 경로 ➔</text>
+  </svg>
+);
+
 const S = `
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Courier+Prime&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
-  :root{
-    --bg:#070b12; --paper:#e6edf2; --ice:#8bb3d4; --ice-dark:#4a6b8c;
-    --blood:#b22222; --dim:#6b7b8c; --panel:#0d141e;
-    --border:rgba(139,179,212,0.2); --text:rgba(230,237,242,0.85);
-  }
-  html,body{background:var(--bg);height:100%; font-family:'Courier Prime', 'Noto Serif KR', serif; color:var(--paper);}
+  body{background:#03080f; color:#e6edf2; font-family:'Courier Prime', 'Noto Serif KR', serif; overflow:hidden;}
   
-  /* 눈 내리는 배경 */
-  .snow-bg{position:fixed;inset:0;pointer-events:none;z-index:0;
-    background-image: radial-gradient(3px 3px at 20px 30px, #fff, transparent), radial-gradient(4px 4px at 80px 70px, #fff, transparent);
-    background-size: 150px 150px; animation: snowfall 5s linear infinite; opacity: 0.15;}
-  @keyframes snowfall{from{background-position:0 0;}to{background-position: 20px 150px;}}
-
-  /* 인트로 & 엔딩 화면 */
-  .fullscreen-panel { position:relative; z-index:10; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px; }
-  .title { font-size:42px; color:var(--ice); margin-bottom:20px; text-shadow: 0 0 20px rgba(139,179,212,0.3); letter-spacing: 2px;}
-  .briefing { max-width:600px; font-size:15px; line-height:1.8; color:var(--text); background:rgba(0,0,0,0.5); padding:30px; border:1px solid var(--border); border-left:3px solid var(--ice); margin-bottom:30px; text-align:left;}
-  .btn-main { padding:15px 40px; font-size:16px; background:transparent; border:1px solid var(--ice); color:var(--ice); cursor:pointer; transition:0.3s; font-family:inherit;}
-  .btn-main:hover { background:var(--ice); color:#000; box-shadow:0 0 15px rgba(139,179,212,0.4);}
-  .btn-accuse { padding:8px 20px; font-size:12px; background:rgba(178,34,34,0.2); border:1px solid var(--blood); color:#ff6666; cursor:pointer; transition:0.3s; width:100%; margin-top:10px;}
-  .btn-accuse:hover { background:var(--blood); color:#fff; }
-
-  /* 게임 화면 레이아웃 */
-  .game-container { display:grid; grid-template-columns:220px 1fr 280px; min-height:100vh; position:relative; z-index:1; }
-  .side-panel { background:rgba(10,15,25,0.9); border-right:1px solid var(--border); padding:20px; overflow-y:auto;}
-  .right-panel { background:rgba(10,15,25,0.9); border-left:1px solid var(--border); padding:20px; overflow-y:auto;}
+  .game-layout { display:flex; height:100vh; }
   
-  .panel-title { font-size:12px; color:var(--ice); border-bottom:1px solid var(--border); padding-bottom:8px; margin-bottom:15px; font-weight:bold; letter-spacing:1px;}
-  .loc-btn { display:block; width:100%; text-align:left; padding:12px; margin-bottom:5px; background:none; border:1px solid transparent; color:var(--dim); cursor:pointer; font-family:inherit;}
-  .loc-btn:hover { color:var(--paper); background:rgba(255,255,255,0.03);}
-  .loc-btn.active { border-color:var(--ice); color:var(--ice); background:rgba(139,179,212,0.1);}
-
-  /* 중앙 씬(도면) */
-  .center-view { display:flex; flex-direction:column; background:#000;}
-  .scene-canvas { position:relative; flex:1; min-height:450px; background-color:#0b111a; 
-    background-image: linear-gradient(rgba(139,179,212,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(139,179,212,0.05) 1px, transparent 1px);
-    background-size: 20px 20px; overflow:hidden;}
+  /* 메인 맵 영역 (75%) */
+  .map-area { flex:3; position:relative; background:#03080f; 
+    background-image: linear-gradient(rgba(92,184,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(92,184,255,0.05) 1px, transparent 1px); background-size: 30px 30px; }
   
-  .hotspot { position:absolute; transform:translate(-50%,-50%); cursor:pointer; z-index:10; text-align:center;}
-  .hotspot-inner { width:44px; height:44px; border:1px solid var(--ice-dark); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; background:rgba(0,0,0,0.7); transition:0.2s; margin:0 auto;}
-  .hotspot:hover .hotspot-inner { border-color:var(--ice); background:rgba(139,179,212,0.3); transform:scale(1.15);}
-  .hotspot.found .hotspot-inner { opacity:0.3; border-color:var(--dim);}
-  .hotspot-label { font-size:10px; color:var(--ice); margin-top:5px; opacity:0; transition:0.2s; background:rgba(0,0,0,0.8); padding:2px 5px;}
-  .hotspot:hover .hotspot-label { opacity:1; }
+  /* 핫스팟 (단서 버튼) */
+  .hotspot { position:absolute; transform:translate(-50%,-50%); cursor:pointer; z-index:10; text-align:center; }
+  .hs-icon { width:48px; height:48px; border:2px solid #2b5278; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; background:rgba(0,0,0,0.8); transition:0.2s; margin:0 auto; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+  .hotspot:hover .hs-icon { border-color:#5cb8ff; background:rgba(92,184,255,0.2); transform:scale(1.1); box-shadow: 0 0 20px rgba(92,184,255,0.4); }
+  .hotspot.found .hs-icon { border-color:#444; opacity:0.4; }
+  .hs-label { font-size:12px; color:#5cb8ff; margin-top:6px; background:rgba(0,0,0,0.9); padding:4px 8px; border:1px solid #2b5278; white-space:nowrap; }
 
-  /* 수첩 및 용의자 카드 */
-  .susp-card { border:1px solid rgba(255,255,255,0.1); padding:15px; margin-bottom:15px;}
-  .note-entry { border-bottom:1px dashed var(--border); padding-bottom:12px; margin-bottom:12px;}
-  .note-head { color:var(--ice); font-weight:bold; font-size:13px; margin-bottom:5px;}
-  .note-body { font-size:11px; color:var(--text); line-height:1.6;}
+  /* 인벤토리 (상단 맵 위) */
+  .inventory-bar { position:absolute; top:20px; left:20px; display:flex; gap:10px; z-index:20;}
+  .inv-item { background:rgba(92,184,255,0.1); border:1px solid #5cb8ff; padding:8px 15px; font-size:14px; color:#5cb8ff; font-weight:bold; box-shadow: 0 0 10px rgba(92,184,255,0.2);}
 
-  /* 모달 */
-  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px;}
-  .modal-content { background:var(--panel); border:1px solid var(--ice); padding:30px; width:100%; max-width:400px; position:relative;}
-  .close-btn { position:absolute; top:10px; right:15px; background:none; border:none; color:var(--dim); font-size:20px; cursor:pointer;}
-  .close-btn:hover { color:var(--paper);}
+  /* 우측 패널 (25%) */
+  .side-panel { flex:1; background:rgba(5,15,25,0.95); border-left:2px solid #2b5278; display:flex; flex-direction:column; z-index:20;}
+  .panel-header { padding:20px; border-bottom:1px solid #2b5278; font-size:16px; color:#5cb8ff; font-weight:bold; letter-spacing:2px; text-align:center;}
+  .notebook { flex:1; overflow-y:auto; padding:20px; }
+  .clue-card { border-left:3px solid #5cb8ff; background:rgba(255,255,255,0.02); padding:12px; margin-bottom:15px; }
+  .clue-title { font-weight:bold; color:#e6edf2; font-size:14px; margin-bottom:6px; }
+  .clue-desc { font-size:12px; color:#a0b4c8; line-height:1.5; }
+  
+  .suspect-section { height:40%; border-top:2px solid #2b5278; overflow-y:auto; padding:20px;}
+  .susp-item { display:flex; align-items:center; gap:12px; margin-bottom:15px; background:rgba(0,0,0,0.3); padding:10px; border:1px solid #1a2a3a;}
+  .susp-av { font-size:28px; }
+
+  /* 모달 (퍼즐 & 알림) */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:100; display:flex; align-items:center; justify-content:center;}
+  .modal-box { background:#0a1520; border:2px solid #5cb8ff; padding:30px; width:450px; text-align:center; box-shadow: 0 0 30px rgba(92,184,255,0.15);}
+  .modal-title { font-size:22px; color:#5cb8ff; margin-bottom:15px; }
+  .puzzle-input { width:100%; padding:15px; font-size:24px; text-align:center; background:#000; border:1px solid #5cb8ff; color:#fff; margin:20px 0; letter-spacing:10px; font-family:monospace;}
+  .btn-submit { background:#5cb8ff; color:#000; border:none; padding:12px 30px; font-size:16px; font-weight:bold; cursor:pointer; transition:0.2s;}
+  .btn-submit:hover { background:#fff; }
+  .btn-close { background:transparent; color:#888; border:1px solid #888; padding:8px 20px; margin-top:15px; cursor:pointer;}
 `;
 
-export default function SnowCabinGameV2() {
-  const [phase, setPhase] = useState("intro"); // intro, game, verdict
-  const [curLocation, setCurLocation] = useState("study");
-  const [foundClues, setFoundClues] = useState([]);
-  const [selectedClue, setSelectedClue] = useState(null);
-  const [accuseTarget, setAccuseTarget] = useState(null);
-  const [isWin, setIsWin] = useState(false);
+export default function MasterpieceGameV3() {
+  const [inventory, setInventory] = useState([]);
+  const [clues, setClues] = useState([]);
+  const [alertMsg, setAlertMsg] = useState(null);
+  const [activePuzzle, setActivePuzzle] = useState(null);
+  const [puzzleValue, setPuzzleValue] = useState("");
 
-  const totalClues = Object.keys(CLUES).length;
-  const loc = LOCATIONS[curLocation];
+  const handleHotspotClick = (hs) => {
+    // 1. 단순 아이템 획득
+    if (hs.type === "item") {
+      if (!inventory.includes(hs.itemGranted)) {
+        setInventory([...inventory, hs.itemGranted]);
+        setAlertMsg({ title: "아이템 획득", text: hs.itemMsg });
+      } else {
+        setAlertMsg({ title: "확인 완료", text: "이미 챙긴 물건이다." });
+      }
+      return;
+    }
 
-  const handleHotspot = (id) => {
-    const clueData = CLUES[id];
-    if (clueData) {
-      setSelectedClue(clueData);
-      if (!foundClues.includes(id)) setFoundClues(p => [...p, id]);
+    // 2. 잠긴 단서 (인벤토리 검사)
+    if (hs.type === "locked") {
+      if (clues.includes(hs.id)) return; // 이미 풀었음
+      if (inventory.includes(hs.reqItem)) {
+        setClues([...clues, hs.id]);
+        setAlertMsg({ title: "잠금 해제!", text: `[${hs.reqItem}]을(를) 사용하여 서랍을 열었다! 새로운 단서를 발견했다.` });
+      } else {
+        setAlertMsg({ title: "잠겨 있음", text: hs.lockMsg });
+      }
+      return;
+    }
+
+    // 3. 퍼즐 (미니 게임)
+    if (hs.type === "puzzle") {
+      if (clues.includes(hs.id)) {
+        setAlertMsg({ title: "금고 개방됨", text: "이미 안의 서류를 확보했다." });
+        return;
+      }
+      setActivePuzzle(hs);
+      setPuzzleValue("");
+      return;
+    }
+
+    // 4. 일반 단서
+    if (hs.type === "clue") {
+      if (!clues.includes(hs.id)) {
+        setClues([...clues, hs.id]);
+      }
     }
   };
 
-  const handleAccuse = (suspect) => {
-    if (suspect.isKiller) {
-      setIsWin(true);
+  const handlePuzzleSubmit = () => {
+    if (puzzleValue === activePuzzle.puzzleAnswer) {
+      setClues([...clues, activePuzzle.id]);
+      setActivePuzzle(null);
+      setAlertMsg({ title: "정답입니다!", text: "철컥 소리와 함께 금고가 열렸다. 결정적인 횡령 증거를 입수했다." });
     } else {
-      setIsWin(false);
+      setAlertMsg({ title: "오류", text: "비밀번호가 틀렸습니다. 다이얼이 움직이지 않습니다." });
     }
-    setPhase("verdict");
-    setAccuseTarget(suspect);
-    setSelectedClue(null);
   };
 
-  // ── 1. 인트로 화면 ──
-  if (phase === "intro") {
-    return (
-      <div className="root"><style>{S}</style>
-        <div className="snow-bg" />
-        <div className="fullscreen-panel">
-          <p style={{color:'var(--dim)', letterSpacing:'3px', fontSize:'12px', marginBottom:'10px'}}>INTERACTIVE MYSTERY GAME</p>
-          <h1 className="title">설화장: 백색의 밀실</h1>
-          <div className="briefing">
-            폭설로 고립된 산장 '설화장'.<br/><br/>
-            다음 날 아침, 산장 주인이 안에서 굳게 잠긴 서재에서 싸늘한 주검으로 발견되었다.<br/>
-            방문은 잠겨 있었고, 유일한 창문 밖 눈밭에는 그 누구의 발자국도 남아있지 않다.<br/><br/>
-            용의자는 1층 거실에 머물던 두 사람.<br/>
-            현장의 물리적 단서를 수집하고 모순을 찾아내 진짜 범인을 고발하라.
-          </div>
-          <button className="btn-main" onClick={() => setPhase("game")}>수사 시작 (ENTER)</button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── 2. 엔딩(판결) 화면 ──
-  if (phase === "verdict") {
-    return (
-      <div className="root"><style>{S}</style>
-        <div className="snow-bg" />
-        <div className="fullscreen-panel">
-          <h1 className="title" style={{color: isWin ? 'var(--ice)' : 'var(--blood)'}}>
-            {isWin ? "사건 해결 (TRICK SOLVED)" : "수사 실패 (COLD CASE)"}
-          </h1>
-          <div className="briefing" style={{borderColor: isWin ? 'var(--ice)' : 'var(--blood)'}}>
-            {isWin ? (
-              <>
-                <strong>김실장의 브리핑:</strong> 사장님, 완벽한 추리입니다.<br/><br/>
-                범인은 바로 <strong>박 관리인</strong>이었습니다. 그는 창문 밖 나뭇가지에 물을 묻힌 밧줄을 걸어 얼린 뒤(얼음 닻), 이를 타고 눈밭에 발자국을 남기지 않고 탈출했습니다.<br/>
-                이후 서재 안의 온풍기 열기로 얼음이 녹자, 밖에서 밧줄을 강하게 잡아당겨 회수하며 창문을 박살낸 것입니다.<br/>
-                산장을 매각하여 아들의 흔적을 지우려는 주인에게 앙심을 품은 슬픈 복수극이었습니다.
-              </>
-            ) : (
-              <>
-                <strong>김실장의 브리핑:</strong> 사장님... 안타깝지만 진범을 놓쳤습니다.<br/><br/>
-                <strong>{accuseTarget?.name}</strong>은 범인이 아닙니다. 우리가 헛짚는 사이, 진짜 범인은 교묘하게 만들어둔 밀실 트릭 뒤로 숨어버렸습니다.<br/>
-                온풍기의 열기, 바깥으로 깨진 유리, 젖은 밧줄... 물리적 증거들이 가리키는 모순을 다시 한번 살펴봐야 합니다.
-              </>
-            )}
-          </div>
-          <button className="btn-main" onClick={() => {
-            setFoundClues([]);
-            setCurLocation("study");
-            setPhase("intro");
-          }}>처음부터 다시 수사하기</button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── 3. 메인 게임 화면 ──
   return (
     <div className="root"><style>{S}</style>
-      <div className="snow-bg" />
-      <div className="game-container">
+      <div className="game-layout">
         
-        {/* 왼쪽 패널: 장소 이동 */}
-        <div className="side-panel">
-          <div className="panel-title">수사 구역 이동</div>
-          {Object.values(LOCATIONS).map(l => (
-            <button key={l.id} className={`loc-btn ${curLocation === l.id ? 'active' : ''}`} onClick={() => setCurLocation(l.id)}>
-              {l.icon} {l.name}
-            </button>
-          ))}
+        {/* 중앙: 대형 원뷰 맵 */}
+        <div className="map-area">
+          <BlueprintMap />
           
-          <div style={{marginTop:'40px'}}>
-            <div className="panel-title">용의자 목록 (고발)</div>
-            {SUSPECTS.map(s => (
-              <div key={s.id} className="susp-card" style={{background:s.bg, borderColor:s.border}}>
-                <div style={{display:'flex', alignItems:'center', gap:'10px', marginBottom:'10px'}}>
-                  <span style={{fontSize:'24px'}}>{s.avatar}</span>
-                  <div>
-                    <div style={{color:'var(--paper)', fontWeight:'bold'}}>{s.name}</div>
-                    <div style={{fontSize:'10px', color:'var(--dim)'}}>{s.role}</div>
-                  </div>
-                </div>
-                <p style={{fontSize:'11px', color:'var(--text)', lineHeight:1.5}}>{s.profile}</p>
-                {/* 단서를 절반 이상 모았을 때 고발 버튼 활성화 */}
-                {foundClues.length >= 3 ? (
-                  <button className="btn-accuse" onClick={() => handleAccuse(s)}>이 자를 범인으로 지목</button>
-                ) : (
-                  <div style={{fontSize:'10px', color:'var(--dim)', marginTop:'10px', textAlign:'center'}}>단서 추가 확보 필요</div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 중앙 패널: 평면도 탐색 */}
-        <div className="center-view">
-          <div style={{padding:'20px', borderBottom:'1px solid var(--border)'}}>
-            <h2 style={{color:'var(--ice)'}}>{loc.icon} {loc.name}</h2>
-            <p style={{fontSize:'12px', color:'var(--dim)', marginTop:'5px'}}>{loc.desc}</p>
-          </div>
-          
-          <div className="scene-canvas">
-            {/* SVG 도면(Blueprint) 렌더링 */}
-            <FloorPlan locationId={curLocation} />
-
-            {/* 클릭 가능한 핫스팟 */}
-            {loc.hotspots.map(hs => (
-              <div key={hs.id} className={`hotspot ${foundClues.includes(hs.id)?'found':''}`} style={{left: `${hs.x}%`, top: `${hs.y}%`}} onClick={()=>handleHotspot(hs.id)}>
-                <div className="hotspot-inner">{hs.icon}</div>
-                <div className="hotspot-label">{hs.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 오른쪽 패널: 탐정 수첩 */}
-        <div className="right-panel">
-          <div className="panel-title">탐정 수첩 ({foundClues.length} / {totalClues} 확보)</div>
-          {foundClues.length === 0 ? (
-            <p style={{fontSize:'12px', color:'var(--dim)', fontStyle:'italic'}}>도면 위의 아이콘을 클릭하여 단서를 수집하십시오.</p>
-          ) : (
-            foundClues.map(id => {
-              const c = CLUES[id];
-              if(!c) return null; // 안전 장치
-              return (
-                <div key={id} className="note-entry">
-                  <div className="note-head">{c.icon} {c.title}</div>
-                  <div className="note-body">{c.short}</div>
-                </div>
-              );
-            })
+          {/* 인벤토리 UI */}
+          {inventory.length > 0 && (
+            <div className="inventory-bar">
+              <div style={{color:'#fff', lineHeight:'35px', fontSize:'12px'}}>보유 아이템:</div>
+              {inventory.map((item, idx) => (
+                <div key={idx} className="inv-item">🗝️ {item}</div>
+              ))}
+            </div>
           )}
+
+          {/* 핫스팟 아이콘 배치 */}
+          {HOTSPOTS.map(hs => (
+            <div key={hs.id} className={`hotspot ${(clues.includes(hs.id) || inventory.includes(hs.itemGranted)) ? 'found' : ''}`} 
+                 style={{ left: `${hs.x}%`, top: `${hs.y}%` }} onClick={() => handleHotspotClick(hs)}>
+              <div className="hs-icon">{hs.icon}</div>
+              <div className="hs-label">{hs.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* 우측: 수첩 & 용의자 */}
+        <div className="side-panel">
+          <div className="panel-header">탐정 수첩 ({clues.length} / 8)</div>
+          
+          <div className="notebook">
+            {clues.length === 0 && <p style={{color:'#888', fontSize:'12px', textAlign:'center'}}>도면을 탐색하여 단서를 모으십시오.</p>}
+            {clues.map(id => (
+              <div key={id} className="clue-card">
+                <div className="clue-title">✓ {CLUES_DATA[id].title}</div>
+                <div className="clue-desc">{CLUES_DATA[id].short}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="suspect-section">
+            <div style={{fontSize:'14px', color:'#5cb8ff', marginBottom:'15px', fontWeight:'bold'}}>용의자 파일</div>
+            {SUSPECTS.map(s => (
+              <div key={s.id} className="susp-item">
+                <div className="susp-av">{s.avatar}</div>
+                <div>
+                  <div style={{color:'#fff', fontSize:'14px', fontWeight:'bold'}}>{s.name} <span style={{fontSize:'10px', color:'#888'}}>{s.role}</span></div>
+                  <div style={{fontSize:'11px', color:'#aaa', marginTop:'4px', lineHeight:1.4}}>{s.profile}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
       </div>
 
-      {/* 모달창: 단서 상세 정보 */}
-      {selectedClue && (
-        <div className="modal-overlay" onClick={()=>setSelectedClue(null)}>
-          <div className="modal-content" onClick={e=>e.stopPropagation()}>
-            <button className="close-btn" onClick={()=>setSelectedClue(null)}>✕</button>
-            <h2 style={{color:'var(--ice)', marginBottom:'15px', borderBottom:'1px solid var(--border)', paddingBottom:'10px'}}>
-              {selectedClue.icon} {selectedClue.title}
-            </h2>
-            <p style={{fontSize:'13px', color:'var(--paper)', lineHeight:1.7}}>{selectedClue.detail}</p>
-            <div style={{marginTop:'20px', fontSize:'11px', color:'var(--dim)', fontStyle:'italic'}}>
-              * 이 단서는 수첩에 자동 기록되었습니다.
+      {/* 알림창 모달 */}
+      {alertMsg && (
+        <div className="modal-overlay">
+          <div className="modal-box">
+            <div className="modal-title">{alertMsg.title}</div>
+            <p style={{color:'#fff', fontSize:'14px', lineHeight:1.6}}>{alertMsg.text}</p>
+            <button className="btn-close" onClick={() => setAlertMsg(null)}>확인</button>
+          </div>
+        </div>
+      )}
+
+      {/* 퍼즐 모달 (금고) */}
+      {activePuzzle && (
+        <div className="modal-overlay">
+          <div className="modal-box" style={{border:'2px solid #ff4444'}}>
+            <div className="modal-title" style={{color:'#ff4444'}}>🔒 {activePuzzle.label} 해제</div>
+            <p style={{color:'#aaa', fontSize:'12px', fontStyle:'italic'}}>{activePuzzle.hint}</p>
+            
+            <input type="text" className="puzzle-input" maxLength={4} placeholder="****"
+                   value={puzzleValue} onChange={(e) => setPuzzleValue(e.target.value.replace(/[^0-9]/g, ''))} />
+            
+            <div style={{display:'flex', gap:'10px', justifyContent:'center'}}>
+              <button className="btn-submit" onClick={handlePuzzleSubmit}>입력</button>
+              <button className="btn-close" style={{marginTop:0}} onClick={() => setActivePuzzle(null)}>취소</button>
             </div>
           </div>
         </div>
