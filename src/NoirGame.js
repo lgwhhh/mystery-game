@@ -1,252 +1,359 @@
 import { useState, useEffect, useRef } from "react";
 
-const CASE = {
-  title: "항구의 밤",
-  subtitle: "NOIR MYSTERY — CASE FILE #07",
-  briefing: `1947년 11월. 부산 남항 창고 지구.\n새벽 2시, 무역상 강철수의 시체가 3번 창고에서 발견됐다.\n뒷통수에 둔기 흔적. 문은 안에서 잠겨 있었다.\n\n당신은 이 도시 최후의 탐정, 이무영.\n세 명의 용의자가 있다. 단 한 명이 거짓말을 하고 있다.`,
-  victim: "강철수 (무역상, 54세)",
-  solution: "김도윤",
-  clues: [
-    { id: "c1", icon: "🔑", title: "예비 열쇠", short: "창고 예비 열쇠 — 지문이 닦여 있다", detail: "3번 창고 예비 열쇠. 표면이 깨끗하게 닦여 있어 지문이 전혀 없다. 원래 이 열쇠는 회계 담당 김도윤이 보관하던 것이었다.", unlocks: "김도윤" },
-    { id: "c2", icon: "🥃", title: "위스키 잔", short: "바닥에 깨진 위스키 잔 — 두 사람분의 입술 자국", detail: "현장에 위스키 잔 두 개. 하나는 피해자 것. 다른 하나엔 립스틱 흔적이 남아 있다. 박수진은 '그날 밤 집에 있었다'고 했지만...", unlocks: "박수진" },
-    { id: "c3", icon: "📒", title: "장부", short: "숨겨진 비밀 장부 — 횡령 기록", detail: "창고 바닥 틈에서 발견된 장부. 지난 6개월간 회사 자금 800만 환이 빠져나간 기록. 서명은 '김도윤'. 피해자가 이를 알고 있었다면?", unlocks: "김도윤" },
-    { id: "c4", icon: "🩸", title: "혈흔 발자국", short: "창고 뒷문 — 남성 신발 11호 혈흔", detail: "창고 뒷문 밖에서 발견된 혈흔 발자국. 남성 신발 약 275mm. 오최진은 키 185cm, 발 사이즈 280mm. 김도윤은 170cm, 발 사이즈 270mm. 누가 더 가깝나?", unlocks: "김도윤" },
-    { id: "c5", icon: "📱", title: "메모 쪽지", short: "피해자 주머니 — '내일 밤 다 말할게'", detail: "피해자 주머니에서 나온 구겨진 메모. '내일 밤 다 말할게 — 수진'. 박수진은 이 메모의 존재를 알고 있었을까? 그녀의 눈빛이 흔들렸다.", unlocks: "박수진" },
-  ],
-  suspects: [
-    { id: "김도윤", name: "김도윤", role: "피해자의 회계 담당, 30세", avatar: "🕴", alibi: "그날 밤 야근 후 회사 근처 여관에서 잠들었다고 주장.", motive: "횡령이 들통날 위기. 피해자가 장부를 발견했다.", lie: "예비 열쇠를 '잃어버렸다'고 했으나, 지문이 닦인 채 현장에서 발견.", isKiller: true, color: "#c0392b" },
-    { id: "박수진", name: "박수진", role: "피해자의 내연녀, 28세", avatar: "👩", alibi: "집에서 혼자 있었다고 주장. 아무도 보지 못했다.", motive: "피해자와 관계 청산 요구로 다툼.", lie: "집에 있었다고 했으나, 현장에서 그녀의 립스틱 잔이 발견됨.", isKiller: false, color: "#8e44ad" },
-    { id: "오최진", name: "오최진", role: "경쟁 무역회사 대표, 47세", avatar: "🧔", alibi: "부산 시내 요정에서 접대 중. 목격자 3명.", motive: "피해자와 계약 분쟁 진행 중.", lie: "알리바이는 완벽하다. 그러나 부하 직원을 시킨 것 아닐까? — 결정적 증거 없음.", isKiller: false, color: "#2c3e50" },
-  ],
+// ═══════════════════════════════════════════════════════
+// GAME DATA: 백색의 밀실 (설화장)
+// ═══════════════════════════════════════════════════════
+
+const LOCATIONS = {
+  study: {
+    id: "study",
+    name: "산장 주인의 서재",
+    icon: "📖",
+    desc: "안에서 굳게 잠겨 있던 밀실. 펄펄 끓는 온풍기 열기와 시신의 피비린내가 섞여 있다.",
+    bg: "#101620", // 차가운 네이비톤
+    hotspots: [
+      { id: "body", x: 45, y: 55, label: "주인의 시신", icon: "💀" },
+      { id: "heater", x: 20, y: 40, label: "온풍기", icon: "♨️" },
+      { id: "window", x: 80, y: 35, label: "깨진 창문", icon: "🪟" },
+      { id: "desk", x: 60, y: 65, label: "서재 책상", icon: "📜" },
+    ],
+  },
+  living_room: {
+    id: "living_room",
+    name: "산장 거실",
+    icon: "🛋️",
+    desc: "용의자들이 모여 있는 1층 거실. 벽난로가 켜져 있지만 냉기가 감돈다.",
+    bg: "#1a1f29",
+    hotspots: [
+      { id: "fireplace", x: 50, y: 40, label: "벽난로", icon: "🔥" },
+      { id: "coat_rack", x: 25, y: 50, label: "외투 걸이", icon: "🧥" },
+      { id: "table", x: 70, y: 65, label: "응접 테이블", icon: "☕" },
+    ],
+  },
+  outside: {
+    id: "outside",
+    name: "서재 밖 눈밭",
+    icon: "❄️",
+    desc: "폭설이 내린 산장 외부. 서재 창문 바로 아래쪽 눈밭이다.",
+    bg: "#0d1821",
+    hotspots: [
+      { id: "snow", x: 50, y: 70, label: "새하얀 눈밭", icon: "⛄" },
+      { id: "glass_shards", x: 40, y: 45, label: "유리 파편", icon: "💎" },
+      { id: "rope_scrap", x: 65, y: 50, label: "창틀 밑 나뭇가지", icon: "🌿" },
+    ],
+  },
 };
 
-const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Playfair+Display:ital,wght@0,700;1,400&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root { --noir: #0a0a0a; --paper: #f0e8d0; --gold: #c9a84c; --blood: #8b1a1a; --dim: #6b6b6b; }
-  body { background: var(--noir); }
-  .game-root { min-height: 100vh; background: var(--noir); font-family: 'Courier Prime', monospace; color: var(--paper); overflow-x: hidden; }
-  .intro-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 40px 20px; text-align: center; position: relative; }
-  .intro-rain { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; background: repeating-linear-gradient(90deg, transparent 0px, transparent 3px, rgba(150,150,200,0.015) 3px, rgba(150,150,200,0.015) 4px); animation: rain 0.4s linear infinite; }
-  @keyframes rain { 0% { background-position: 0 0; } 100% { background-position: 0 80px; } }
-  .case-badge { font-family: 'Special Elite', cursive; font-size: 11px; letter-spacing: 6px; color: var(--gold); border: 1px solid rgba(201,168,76,0.4); padding: 6px 20px; margin-bottom: 30px; position: relative; z-index: 1; }
-  .case-title { font-family: 'Playfair Display', serif; font-size: clamp(42px, 8vw, 80px); font-weight: 700; color: var(--paper); line-height: 1; margin-bottom: 8px; position: relative; z-index: 1; text-shadow: 2px 2px 0 rgba(0,0,0,0.8); }
-  .case-title span { color: var(--gold); font-style: italic; }
-  .divider { width: 120px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); margin: 24px auto; position: relative; z-index: 1; }
-  .briefing-box { max-width: 540px; background: rgba(240,232,208,0.04); border: 1px solid rgba(240,232,208,0.1); border-left: 3px solid var(--gold); padding: 24px 28px; text-align: left; line-height: 1.9; font-size: 14px; color: rgba(240,232,208,0.8); white-space: pre-line; position: relative; z-index: 1; font-style: italic; }
-  .cursor { display: inline-block; width: 8px; height: 14px; background: var(--gold); animation: blink 0.8s steps(1) infinite; vertical-align: middle; }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-  .start-btn { margin-top: 36px; padding: 14px 48px; background: transparent; border: 1px solid var(--gold); color: var(--gold); font-family: 'Special Elite', cursive; font-size: 13px; letter-spacing: 4px; cursor: pointer; position: relative; z-index: 1; transition: all 0.3s; text-transform: uppercase; }
-  .start-btn:hover { background: var(--gold); color: var(--noir); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(201,168,76,0.3); }
-  .game-layout { max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
-  .game-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid rgba(240,232,208,0.1); margin-bottom: 28px; }
-  .game-title-sm { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--gold); }
-  .lives { display: flex; gap: 6px; }
-  .life { font-size: 18px; transition: all 0.3s; }
-  .life.dead { filter: grayscale(1); opacity: 0.25; }
-  .phase-label { font-size: 11px; letter-spacing: 3px; color: var(--dim); text-transform: uppercase; }
-  .tabs { display: flex; gap: 0; border-bottom: 1px solid rgba(240,232,208,0.1); margin-bottom: 28px; }
-  .tab { padding: 10px 20px; font-family: 'Special Elite', cursive; font-size: 12px; letter-spacing: 2px; color: var(--dim); cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; transition: all 0.2s; text-transform: uppercase; }
-  .tab:hover { color: var(--paper); }
-  .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
-  .tab-badge { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--blood); font-size: 9px; color: white; margin-left: 6px; font-family: monospace; font-style: normal; }
-  .clues-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
-  .clue-card { background: rgba(240,232,208,0.03); border: 1px solid rgba(240,232,208,0.08); padding: 18px; cursor: pointer; transition: all 0.25s; position: relative; overflow: hidden; }
-  .clue-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 0; background: var(--gold); transition: height 0.3s; }
-  .clue-card:hover::before, .clue-card.found::before { height: 100%; }
-  .clue-card:hover { border-color: rgba(201,168,76,0.3); background: rgba(201,168,76,0.05); transform: translateY(-2px); }
-  .clue-card.found { border-color: rgba(201,168,76,0.25); background: rgba(201,168,76,0.04); }
-  .clue-icon { font-size: 28px; margin-bottom: 10px; }
-  .clue-title { font-family: 'Playfair Display', serif; font-size: 15px; color: var(--paper); margin-bottom: 6px; }
-  .clue-short { font-size: 12px; color: var(--dim); font-style: italic; line-height: 1.6; }
-  .clue-new { position: absolute; top: 12px; right: 12px; background: var(--blood); color: white; font-size: 9px; padding: 2px 6px; letter-spacing: 2px; font-family: 'Special Elite', cursive; }
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.2s; }
-  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-  .modal-box { background: #111; border: 1px solid rgba(201,168,76,0.3); max-width: 480px; width: 100%; padding: 32px; position: relative; animation: slideUp 0.25s ease-out; }
-  @keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
-  .modal-icon { font-size: 40px; margin-bottom: 16px; }
-  .modal-title { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--gold); margin-bottom: 14px; }
-  .modal-text { font-size: 14px; line-height: 1.8; color: rgba(240,232,208,0.8); font-style: italic; border-left: 2px solid var(--gold); padding-left: 16px; }
-  .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--dim); font-size: 20px; cursor: pointer; transition: color 0.2s; }
-  .modal-close:hover { color: var(--paper); }
-  .modal-note { margin-top: 20px; font-size: 11px; letter-spacing: 2px; color: var(--gold); text-transform: uppercase; }
-  .suspects-list { display: flex; flex-direction: column; gap: 16px; }
-  .suspect-card { background: rgba(240,232,208,0.03); border: 1px solid rgba(240,232,208,0.08); padding: 20px; transition: all 0.2s; position: relative; }
-  .suspect-card:hover { border-color: rgba(240,232,208,0.15); }
-  .suspect-header { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
-  .suspect-avatar { font-size: 36px; }
-  .suspect-name { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--paper); }
-  .suspect-role { font-size: 11px; color: var(--dim); letter-spacing: 1px; margin-top: 2px; }
-  .suspect-info { font-size: 13px; color: rgba(240,232,208,0.7); line-height: 1.7; margin-bottom: 12px; }
-  .suspect-info strong { color: var(--gold); }
-  .interrogate-btn { padding: 9px 22px; background: transparent; border: 1px solid rgba(240,232,208,0.2); color: var(--paper); font-family: 'Special Elite', cursive; font-size: 11px; letter-spacing: 3px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; }
-  .interrogate-btn:hover { border-color: var(--gold); color: var(--gold); }
-  .accuse-btn { padding: 9px 22px; background: rgba(139,26,26,0.15); border: 1px solid var(--blood); color: #e88; font-family: 'Special Elite', cursive; font-size: 11px; letter-spacing: 3px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; margin-left: 10px; }
-  .accuse-btn:hover { background: var(--blood); color: white; }
-  .suspect-clue-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-  .s-clue-tag { font-size: 10px; background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.2); color: var(--gold); padding: 2px 8px; }
-  .interrogation-modal { max-width: 560px; background: #0e0e0e; border: 1px solid rgba(201,168,76,0.25); }
-  .interro-header { border-bottom: 1px solid rgba(240,232,208,0.08); padding-bottom: 16px; margin-bottom: 20px; }
-  .interro-name { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--gold); }
-  .interro-role { font-size: 11px; color: var(--dim); letter-spacing: 2px; }
-  .chat-area { min-height: 160px; max-height: 260px; overflow-y: auto; margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; }
-  .chat-msg { padding: 12px 14px; font-size: 13px; line-height: 1.7; border-radius: 2px; }
-  .chat-msg.detective { background: rgba(201,168,76,0.08); border-left: 2px solid var(--gold); color: rgba(240,232,208,0.9); font-style: italic; }
-  .chat-msg.suspect { background: rgba(240,232,208,0.03); border-left: 2px solid rgba(240,232,208,0.2); color: rgba(240,232,208,0.75); }
-  .chat-msg.loading { color: var(--dim); font-style: italic; animation: pulse 1.5s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
-  .question-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-  .q-btn { text-align: left; padding: 10px 14px; background: rgba(240,232,208,0.02); border: 1px solid rgba(240,232,208,0.08); color: rgba(240,232,208,0.7); font-family: 'Courier Prime', monospace; font-size: 12px; cursor: pointer; transition: all 0.2s; line-height: 1.5; }
-  .q-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.04); }
-  .q-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-  .q-btn.asked { opacity: 0.35; text-decoration: line-through; cursor: not-allowed; }
-  .notes-panel { background: rgba(240,232,208,0.02); border: 1px solid rgba(240,232,208,0.07); padding: 20px; }
-  .notes-title { font-family: 'Playfair Display', serif; font-size: 16px; color: var(--gold); margin-bottom: 16px; letter-spacing: 1px; }
-  .note-entry { border-bottom: 1px solid rgba(240,232,208,0.06); padding: 10px 0; }
-  .note-entry:last-child { border-bottom: none; }
-  .note-clue { font-size: 12px; color: var(--gold); font-family: 'Special Elite', cursive; letter-spacing: 1px; margin-bottom: 4px; }
-  .note-detail { font-size: 12px; color: rgba(240,232,208,0.65); line-height: 1.7; font-style: italic; }
-  .note-empty { font-size: 13px; color: var(--dim); font-style: italic; text-align: center; padding: 20px 0; }
-  .verdict-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 40px 20px; }
-  .verdict-badge { font-size: 64px; margin-bottom: 24px; animation: verdict-pop 0.5s cubic-bezier(0.175,0.885,0.32,1.275); }
-  @keyframes verdict-pop { from{transform:scale(0) rotate(-10deg)} to{transform:scale(1) rotate(0)} }
-  .verdict-title { font-family: 'Playfair Display', serif; font-size: clamp(28px,5vw,52px); font-weight: 700; margin-bottom: 12px; }
-  .verdict-title.win { color: var(--gold); }
-  .verdict-title.lose { color: var(--blood); }
-  .verdict-sub { font-size: 14px; color: var(--dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px; font-family: 'Special Elite', cursive; }
-  .verdict-text { max-width: 480px; font-size: 14px; line-height: 1.9; color: rgba(240,232,208,0.75); font-style: italic; margin-bottom: 32px; }
-  .replay-btn { padding: 14px 40px; background: transparent; border: 1px solid var(--gold); color: var(--gold); font-family: 'Special Elite', cursive; font-size: 12px; letter-spacing: 4px; cursor: pointer; transition: all 0.3s; text-transform: uppercase; }
-  .replay-btn:hover { background: var(--gold); color: var(--noir); }
-  .confirm-modal { max-width: 420px; text-align: center; }
-  .confirm-title { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--blood); margin-bottom: 12px; }
-  .confirm-name { font-size: 28px; color: var(--paper); font-family: 'Playfair Display', serif; font-style: italic; margin: 16px 0; }
-  .confirm-text { font-size: 13px; color: var(--dim); line-height: 1.7; margin-bottom: 24px; }
-  .confirm-btns { display: flex; gap: 12px; justify-content: center; }
-  .btn-yes { padding: 11px 32px; background: var(--blood); border: none; color: white; font-family: 'Special Elite', cursive; font-size: 12px; letter-spacing: 3px; cursor: pointer; transition: all 0.2s; }
-  .btn-yes:hover { background: #a01a1a; }
-  .btn-no { padding: 11px 32px; background: transparent; border: 1px solid rgba(240,232,208,0.2); color: var(--dim); font-family: 'Special Elite', cursive; font-size: 12px; letter-spacing: 3px; cursor: pointer; transition: all 0.2s; }
-  .btn-no:hover { color: var(--paper); border-color: rgba(240,232,208,0.4); }
-  .scrollbar-custom::-webkit-scrollbar { width: 4px; }
-  .scrollbar-custom::-webkit-scrollbar-track { background: transparent; }
-  .scrollbar-custom::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.3); }
+const CLUES = {
+  // 서재
+  body: {
+    id: "body", location: "study",
+    title: "열쇠와 시신", icon: "💀",
+    short: "방문 열쇠는 주머니에. 외상은 없고 독살 혹은 질식 추정.",
+    detail: "방은 안에서 잠겨 있었고 열쇠는 피해자 주머니에 있다. 전형적인 밀실.",
+    weight: { 박관리인: 0, 최동업: 0, 이딸: 0 },
+    unlocks: [],
+  },
+  heater: {
+    id: "heater", location: "study",
+    title: "MAX로 켜진 온풍기", icon: "♨️",
+    short: "실내 온도가 비정상적으로 높다.",
+    detail: "겨울 산장임을 감안해도 숨이 턱 막힐 정도로 온도가 높게 설정되어 있다. 무언가를 빨리 '녹이거나' 증발시키려 했던 흔적일까?",
+    weight: { 박관리인: 2, 최동업: 0, 이딸: 0 },
+    unlocks: ["q_heater"],
+  },
+  window: {
+    id: "window", location: "study",
+    title: "창문의 상태", icon: "🪟",
+    short: "창문이 깨져 찬바람이 들어온다.",
+    detail: "유일하게 외부와 통하는 창문. 하지만 바깥 눈밭에는 발자국이 없다. 사람이 드나들지 않았다면 왜 깨진 것일까?",
+    weight: { 박관리인: 1, 최동업: 0, 이딸: 0 },
+    unlocks: ["q_window"],
+  },
+  desk: {
+    id: "desk", location: "study",
+    title: "찢어진 매각 계약서", icon: "📜",
+    short: "산장 매각 계약서가 찢겨 있다.",
+    detail: "피해자가 최근 이 산장을 처분하려 했다는 서류. 누군가는 이 산장이 넘어가는 것을 극도로 꺼렸다.",
+    weight: { 박관리인: 3, 최동업: 1, 이딸: 2 },
+    unlocks: ["q_motive"],
+  },
+  
+  // 외부 눈밭
+  snow: {
+    id: "snow", location: "outside",
+    title: "발자국 없는 눈밭", icon: "⛄",
+    short: "서재 창문 밖 눈밭에는 어떠한 발자국도 없다.",
+    detail: "어젯밤 10시 이후로 눈이 그쳤다. 사망 추정 시간은 자정. 창문으로 탈출했다면 반드시 발자국이 남아야 한다.",
+    weight: { 박관리인: 0, 최동업: 0, 이딸: 0 },
+    unlocks: [],
+  },
+  glass_shards: {
+    id: "glass_shards", location: "outside",
+    title: "외부로 흩어진 파편", icon: "💎",
+    short: "창문의 유리 파편이 방 안이 아닌 바깥 눈밭에 떨어져 있다.",
+    detail: "이것은 결정적 모순이다. 외부 침입자가 유리를 깨고 들어왔다면 파편은 방 안에 있어야 한다. 안에서 밖으로 강한 충격이 가해졌다.",
+    weight: { 박관리인: 2, 최동업: 0, 이딸: 0 },
+    unlocks: [],
+  },
+  rope_scrap: {
+    id: "rope_scrap", location: "outside",
+    title: "젖은 밧줄 조각", icon: "🌿",
+    short: "창틀 밑 나뭇가지에 걸린 짧고 젖은 나일론 밧줄.",
+    detail: "날카로운 창틀 유리에 쓸려 끊어진 듯한 고강도 나일론 밧줄이다. 이상하게도 물기를 흠뻑 머금고 있다. 산악용 로프로 보인다.",
+    weight: { 박관리인: 4, 최동업: 0, 이딸: 0 },
+    unlocks: ["q_rope"],
+  },
+  
+  // 거실
+  coat_rack: {
+    id: "coat_rack", location: "living_room",
+    title: "젖은 등산화", icon: "🧥",
+    short: "현관에 놓인 박 관리인의 등산화가 젖어 있다.",
+    detail: "눈이 그친 뒤 누군가 밖을 돌아다녔다는 증거. 박 관리인은 실내에만 있었다고 증언했다.",
+    weight: { 박관리인: 3, 최동업: 0, 이딸: 0 },
+    unlocks: ["q_shoes"],
+  }
+};
+
+const SUSPECTS = [
+  {
+    id: "박관리인", name: "박 씨", role: "산장 관리인, 60대", avatar: "🧔",
+    bg: "rgba(40,60,80,0.15)", border: "rgba(100,150,200,0.4)",
+    isKiller: true,
+    profile: "30년 전 산장 공사 때 아들을 잃고 이 산장을 관리하며 살아왔다. 산악 구조대 출신.",
+    baseDialogue: { greet: "주인 어르신이 돌아가시다니... 저는 어젯밤 내내 거실 난로 앞을 지켰습니다." },
+    questions: [
+      {
+        id: "q_motive", text: "산장 매각 계약서에 대해 알고 계셨습니까?", requires: ["desk"],
+        answer: "네... 어르신이 도시에 나가신다고 하더군요. 섭섭하지만 어쩌겠습니까.",
+        contradiction: null, weight: { 박관리인: 1 }
+      },
+      {
+        id: "q_shoes", text: "밤새 거실에 있었다면서 등산화는 왜 젖어 있죠?", requires: ["coat_rack"],
+        answer: "아... 새벽에 장작을 가지러 잠시 나갔다 왔습니다.",
+        contradiction: "snow", contradictionAnswer: "장작을 가지러 갔다면 발자국이 있어야 하는데... (당황하며 말을 잃는다)", weight: { 박관리인: 2 }
+      },
+      {
+        id: "q_rope", text: "창문 밖에서 산악용 밧줄 조각이 발견되었습니다.", requires: ["rope_scrap"],
+        answer: "산장 창고에 밧줄은 많습니다. 누군가 썼나 보죠.",
+        contradiction: "glass_shards", contradictionAnswer: "유리가 밖으로 깨졌다고요? ...그건... 폭설로 인한 바람결에...", weight: { 박관리인: 3 }
+      },
+      {
+        id: "q_heater", text: "서재 온풍기가 최대 온도로 켜져 있었습니다. '얼음'을 녹이기 위해서였나요?", requires: ["heater", "glass_shards", "rope_scrap"],
+        answer: "...무슨 말씀을 하시는지 모르겠군요.",
+        contradiction: "body", contradictionAnswer: "(체념한 듯) ...물과 밧줄, 그리고 차가운 바람. 그것만 있으면 완벽한 밀실을 만들 수 있죠.", weight: { 박관리인: 4 }
+      }
+    ]
+  },
+  {
+    id: "최동업", name: "최 대표", role: "동업자, 40대", avatar: "🕴",
+    bg: "rgba(80,40,40,0.15)", border: "rgba(200,100,100,0.4)",
+    isKiller: false,
+    profile: "피해자의 오랜 사업 파트너. 최근 공금 횡령 문제로 피해자와 다투는 소리가 들렸다.",
+    baseDialogue: { greet: "나 참, 골치 아프게 됐군. 난 2층 내 방에서 자고 있었소." },
+    questions: [
+      {
+        id: "q_motive2", text: "매각 계약서 건으로 피해자와 다투셨죠?", requires: ["desk"],
+        answer: "사업 방향이 안 맞아서 언쟁이 있었던 건 사실이오. 하지만 죽이진 않았어.",
+        contradiction: null, weight: { 최동업: 1 }
+      }
+    ]
+  }
+];
+
+// 스타일 정의 (설화장 테마의 차가운 CSS)
+const S = `
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Courier+Prime&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{
+    --bg:#0b111a; --paper:#e6edf2; --ice:#8bb3d4; --ice-dark:#4a6b8c;
+    --blood:#992222; --dim:#6b7b8c; --panel:#121a24;
+    --border:rgba(139,179,212,0.2); --text:rgba(230,237,242,0.85);
+  }
+  html,body{background:var(--bg);height:100%;}
+  .root{min-height:100vh;background:var(--bg);font-family:'Courier Prime',monospace;color:var(--paper);overflow-x:hidden;}
+  
+  /* 눈 내리는 애니메이션 */
+  .snow{position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image: 
+    radial-gradient(4px 4px at 20px 30px, #fff, rgba(0,0,0,0)),
+    radial-gradient(3px 3px at 40px 70px, #fff, rgba(0,0,0,0)),
+    radial-gradient(5px 5px at 90px 40px, #fff, rgba(0,0,0,0));
+    background-repeat: repeat;
+    background-size: 150px 150px;
+    animation: snowfall 4s linear infinite; opacity: 0.3;}
+  @keyframes snowfall{from{background-position:0 0;}to{background-position: 20px 150px;}}
+
+  /* 레이아웃 및 UI (원안 기반 색상 변경) */
+  .game{display:grid;grid-template-columns:220px 1fr 260px;min-height:100vh; position:relative; z-index:1;}
+  .left-panel, .right-panel{background:rgba(10,15,25,0.8); border-color:var(--border); padding:16px;}
+  .panel-title{font-size:11px; color:var(--ice); border-bottom:1px solid var(--border); margin-bottom:10px; padding-bottom:5px; font-weight:bold;}
+  
+  .loc-btn{display:flex; gap:10px; padding:10px; background:transparent; border:1px solid transparent; color:var(--dim); cursor:pointer; width:100%; text-align:left;}
+  .loc-btn:hover{color:var(--paper); background:rgba(255,255,255,0.05);}
+  .loc-btn.active{border-color:var(--ice); color:var(--ice); background:rgba(139,179,212,0.1);}
+  
+  .scene-canvas{position:relative;flex:1;min-height:400px;background:#000;overflow:hidden;}
+  .hotspot{position:absolute;transform:translate(-50%,-50%);cursor:pointer;z-index:10;}
+  .hotspot-inner{width:40px;height:40px;border:1px solid var(--ice-dark);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:rgba(0,0,0,0.6); transition:0.2s;}
+  .hotspot:hover .hotspot-inner{border-color:var(--ice); background:rgba(139,179,212,0.2); transform:scale(1.1);}
+  .hotspot.found .hotspot-inner{opacity:0.4;}
+  
+  .tabs{display:flex; border-bottom:1px solid var(--border);}
+  .tab{padding:10px 20px; color:var(--dim); cursor:pointer; background:none; border:none;}
+  .tab.on{color:var(--ice); border-bottom:2px solid var(--ice);}
+  
+  .susp-card{border:1px solid rgba(255,255,255,0.1); padding:15px; margin-bottom:10px;}
+  .btn-sm{padding:5px 15px; background:transparent; border:1px solid var(--dim); color:var(--paper); cursor:pointer;}
+  .btn-sm:hover{border-color:var(--ice); color:var(--ice);}
+  
+  .note-entry{margin-bottom:15px; border-bottom:1px dashed var(--border); padding-bottom:10px;}
+  .note-head{color:var(--ice); font-weight:bold; font-size:13px; margin-bottom:5px;}
+  .note-body{font-size:11px; color:var(--text); line-height:1.5;}
+  
+  .modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:100; display:flex; align-items:center; justify-content:center;}
+  .modal-content{background:var(--panel); border:1px solid var(--ice); padding:30px; width:400px; position:relative;}
+  .close-btn{position:absolute; top:10px; right:10px; background:none; border:none; color:white; cursor:pointer;}
+  
+  .q-btn{display:block; width:100%; text-align:left; padding:10px; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--paper); margin-bottom:5px; cursor:pointer;}
+  .q-btn:disabled{opacity:0.4; cursor:not-allowed;}
+  .chat-box{height:150px; overflow-y:auto; border:1px solid var(--border); padding:10px; margin-bottom:10px; font-size:12px; line-height:1.6;}
 `;
 
-const QUESTIONS = {
-  김도윤: ["그날 밤 몇 시에 퇴근했습니까?", "예비 열쇠는 어디 있습니까?", "강철수 씨와 마지막으로 나눈 대화는?", "회사 장부에 대해 아는 바가 있습니까?"],
-  박수진: ["강철수 씨와 마지막으로 만난 게 언제입니까?", "그날 밤 집에만 있었다고요?", "이 메모 쪽지를 본 적 있습니까?", "창고에 간 적이 있습니까?"],
-  오최진: ["강철수 씨와 계약 분쟁이 있었죠?", "그날 밤 요정에서 몇 시까지 있었습니까?", "부하 직원들 중 창고 근처에 있던 사람이 있습니까?", "강철수 씨 사망으로 누가 이익을 봅니까?"],
-};
-
-export default function NoirGame() {
-  const [phase, setPhase] = useState("intro");
-  const [activeTab, setActiveTab] = useState("clues");
+export default function SnowCabinGame() {
+  const [curLocation, setCurLocation] = useState("study");
   const [foundClues, setFoundClues] = useState([]);
+  const [activeTab, setActiveTab] = useState("suspects");
   const [selectedClue, setSelectedClue] = useState(null);
-  const [lives, setLives] = useState(3);
-  const [win, setWin] = useState(null);
-  const [accuseTarget, setAccuseTarget] = useState(null);
   const [interrogating, setInterrogating] = useState(null);
   const [chatHistory, setChatHistory] = useState({});
-  const [askedQuestions, setAskedQuestions] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [typeText, setTypeText] = useState("");
-  const [typeIdx, setTypeIdx] = useState(0);
-  const chatEndRef = useRef(null);
+  const [askedQ, setAskedQ] = useState({});
 
-  useEffect(() => {
-    if (phase !== "intro") return;
-    if (typeIdx < CASE.briefing.length) {
-      const t = setTimeout(() => { setTypeText((p) => p + CASE.briefing[typeIdx]); setTypeIdx((i) => i + 1); }, 28);
-      return () => clearTimeout(t);
-    }
-  }, [phase, typeIdx]);
+  const loc = LOCATIONS[curLocation];
 
-  useEffect(() => { if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: "smooth" }); }, [chatHistory, interrogating]);
-
-  const handleClueClick = (clue) => { setSelectedClue(clue); if (!foundClues.includes(clue.id)) setFoundClues((p) => [...p, clue.id]); };
-  const handleAccuse = (suspect) => setAccuseTarget(suspect);
-  const confirmAccuse = () => {
-    if (!accuseTarget) return;
-    if (accuseTarget.isKiller) { setWin(true); setPhase("verdict"); }
-    else { const nl = lives - 1; setLives(nl); if (nl <= 0) { setWin(false); setPhase("verdict"); } }
-    setAccuseTarget(null);
+  const handleHotspot = (id) => {
+    setSelectedClue(CLUES[id]);
+    if (!foundClues.includes(id)) setFoundClues(p => [...p, id]);
   };
 
-  const handleQuestion = async (suspect, question) => {
-    const sId = suspect.id;
-    if ((askedQuestions[sId] || []).includes(question) || loading) return;
-    setAskedQuestions((p) => ({ ...p, [sId]: [...(p[sId] || []), question] }));
-    setChatHistory((p) => ({ ...p, [sId]: [...(p[sId] || []), { role: "detective", text: question }] }));
-    setLoading(true);
-    const systemPrompt = `당신은 1947년 부산 누아르 세계의 인물입니다.\n이름: ${suspect.name} (${suspect.role})\n알리바이: ${suspect.alibi}\n동기: ${suspect.motive}\n거짓말: ${suspect.lie}\n범인 여부: ${suspect.isKiller ? "예 — 범인입니다. 교묘하게 숨기세요." : "아니오 — 무고합니다."}\n규칙:\n- 반드시 한국어로 답변하세요.\n- 누아르 소설 속 인물처럼 짧고 날카롭게 말하세요.\n- 3~5문장 이내로 답하세요.\n- 현대적 표현이나 마크다운을 사용하지 마세요.`;
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 200, system: systemPrompt, messages: [{ role: "user", content: question }] }) });
-      const data = await res.json();
-      const reply = data?.content?.[0]?.text || "...침묵이 흐른다.";
-      setChatHistory((p) => ({ ...p, [sId]: [...(p[sId] || []), { role: "suspect", text: reply }] }));
-    } catch { setChatHistory((p) => ({ ...p, [sId]: [...(p[sId] || []), { role: "suspect", text: "...말을 잇지 못한다." }] })); }
-    setLoading(false);
+  const askQuestion = (suspect, q) => {
+    const sid = suspect.id;
+    setAskedQ(p => ({ ...p, [sid]: [...(p[sid] || []), q.id] }));
+    const hasContra = q.contradiction && foundClues.includes(q.contradiction);
+    const ans = hasContra ? q.contradictionAnswer : q.answer;
+    
+    setChatHistory(p => ({
+      ...p,
+      [sid]: [...(p[sid] || []), { q: q.text, a: ans }]
+    }));
   };
-
-  const resetGame = () => { setPhase("intro"); setActiveTab("clues"); setFoundClues([]); setSelectedClue(null); setLives(3); setWin(null); setAccuseTarget(null); setInterrogating(null); setChatHistory({}); setAskedQuestions({}); setTypeText(""); setTypeIdx(0); };
-
-  if (phase === "intro") return (
-    <div className="game-root"><style>{styles}</style>
-      <div className="intro-screen">
-        <div className="intro-rain" />
-        <div className="case-badge">DETECTIVE BUREAU — 1947 BUSAN</div>
-        <h1 className="case-title">항구의 <span>밤</span></h1>
-        <div className="case-badge" style={{fontSize:'10px',letterSpacing:'4px',marginBottom:0,marginTop:4}}>NOIR MYSTERY CASE FILE #07</div>
-        <div className="divider" />
-        <div className="briefing-box">{typeText}{typeIdx < CASE.briefing.length && <span className="cursor" />}</div>
-        {typeIdx >= CASE.briefing.length && <button className="start-btn" onClick={() => setPhase("game")}>수사 개시</button>}
-      </div>
-    </div>
-  );
-
-  if (phase === "verdict") return (
-    <div className="game-root"><style>{styles}</style>
-      <div className="verdict-screen">
-        <div className="verdict-badge">{win ? "🏆" : "💀"}</div>
-        <h2 className={`verdict-title ${win ? "win" : "lose"}`}>{win ? "사건 해결" : "수사 실패"}</h2>
-        <p className="verdict-sub">{win ? "정의는 어둠 속에서도 빛을 찾는다" : "범인은 안개 속으로 사라졌다"}</p>
-        <p className="verdict-text">{win ? "이무영 탐정은 회계 담당 김도윤을 지목했다. 횡령이 발각될 위기에 처한 그는 강철수를 창고로 불러내 범행을 저질렀다. 발자국과 장부가 그를 배신했다. 부두에서 체포될 때 그는 아무 말도 하지 않았다." : "기회를 모두 소진했다. 김도윤은 도시를 빠져나갔다. 항구의 밤은 다시 침묵으로 돌아갔다."}</p>
-        <button className="replay-btn" onClick={resetGame}>다시 수사하기</button>
-      </div>
-    </div>
-  );
 
   return (
-    <div className="game-root"><style>{styles}</style>
-      <div className="game-layout">
-        <div className="game-header">
-          <div><div className="game-title-sm">항구의 밤</div><div className="phase-label" style={{marginTop:2}}>피해자: {CASE.victim}</div></div>
-          <div style={{textAlign:'center'}}><div className="phase-label" style={{marginBottom:6}}>남은 기회</div><div className="lives">{[0,1,2].map(i => <span key={i} className={`life ${i >= lives ? "dead" : ""}`}>🕯</span>)}</div></div>
+    <div className="root"><style>{S}</style>
+      <div className="snow" />
+      <div className="game">
+        
+        {/* 왼쪽 패널: 장소 이동 */}
+        <div className="left-panel">
+          <div className="panel-title">수사 장소 (설화장)</div>
+          {Object.values(LOCATIONS).map(l => (
+            <button key={l.id} className={`loc-btn ${curLocation === l.id ? 'active' : ''}`} onClick={() => setCurLocation(l.id)}>
+              {l.icon} {l.name}
+            </button>
+          ))}
         </div>
-        <div className="tabs">
-          <button className={`tab ${activeTab==="clues"?"active":""}`} onClick={() => setActiveTab("clues")}>증거{foundClues.length > 0 && <span className="tab-badge">{foundClues.length}</span>}</button>
-          <button className={`tab ${activeTab==="suspects"?"active":""}`} onClick={() => setActiveTab("suspects")}>용의자</button>
-          <button className={`tab ${activeTab==="notes"?"active":""}`} onClick={() => setActiveTab("notes")}>수첩{foundClues.length > 0 && <span className="tab-badge">{foundClues.length}</span>}</button>
+
+        {/* 중앙 패널: 씬 탐색 및 용의자 */}
+        <div style={{display:'flex', flexDirection:'column'}}>
+          <div style={{padding:'20px', borderBottom:'1px solid var(--border)'}}>
+            <h2 style={{color:'var(--ice)'}}>{loc.icon} {loc.name}</h2>
+            <p style={{fontSize:'12px', color:'var(--dim)'}}>{loc.desc}</p>
+          </div>
+          
+          <div className="scene-canvas">
+            <div style={{position:'absolute', inset:0, background:loc.bg}} />
+            {loc.hotspots.map(hs => (
+              <div key={hs.id} className={`hotspot ${foundClues.includes(hs.id)?'found':''}`} style={{left:\`\${hs.x}%\`, top:\`\${hs.y}%\`}} onClick={()=>handleHotspot(hs.id)}>
+                <div className="hotspot-inner">{hs.icon}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="tabs">
+            <button className={`tab on`}>용의자 심문</button>
+          </div>
+          
+          <div style={{padding:'20px', overflowY:'auto'}}>
+            {SUSPECTS.map(s => (
+              <div key={s.id} className="susp-card" style={{background:s.bg, borderColor:s.border}}>
+                <h3>{s.avatar} {s.name} <span style={{fontSize:'11px', color:'var(--dim)'}}>{s.role}</span></h3>
+                <p style={{fontSize:'12px', margin:'10px 0', color:'var(--text)'}}>{s.profile}</p>
+                <button className="btn-sm" onClick={()=>setInterrogating(s)}>심문하기</button>
+              </div>
+            ))}
+          </div>
         </div>
-        {activeTab === "clues" && (
-          <div>
-            <p style={{fontSize:12,color:'var(--dim)',fontStyle:'italic',marginBottom:20}}>— 현장 증거를 클릭하여 단서를 수집하십시오. 총 {CASE.clues.length}개의 증거물이 있습니다.</p>
-            <div className="clues-grid">{CASE.clues.map(clue => (<div key={clue.id} className={`clue-card ${foundClues.includes(clue.id) ? "found" : ""}`} onClick={() => handleClueClick(clue)}>{!foundClues.includes(clue.id) && <div className="clue-new">NEW</div>}<div className="clue-icon">{clue.icon}</div><div className="clue-title">{clue.title}</div><div className="clue-short">{clue.short}</div></div>))}</div>
-          </div>
-        )}
-        {activeTab === "suspects" && (
-          <div>
-            <p style={{fontSize:12,color:'var(--dim)',fontStyle:'italic',marginBottom:20}}>— 심문하여 알리바이를 추궁하십시오. 확인된 단서가 많을수록 고발이 유리합니다.</p>
-            <div className="suspects-list">{CASE.suspects.map(s => { const relClues = CASE.clues.filter(c => c.unlocks === s.id && foundClues.includes(c.id)); return (<div key={s.id} className="suspect-card"><div className="suspect-header"><div className="suspect-avatar">{s.avatar}</div><div><div className="suspect-name">{s.name}</div><div className="suspect-role">{s.role}</div></div></div><div className="suspect-info"><strong>알리바이:</strong> {s.alibi}</div>{relClues.length > 0 && (<div><div className="phase-label" style={{marginBottom:6}}>확보된 관련 단서</div><div className="suspect-clue-tags">{relClues.map(c => <span key={c.id} className="s-clue-tag">{c.icon} {c.title}</span>)}</div></div>)}<div style={{display:'flex',gap:8,flexWrap:'wrap'}}><button className="interrogate-btn" onClick={() => setInterrogating(s)}>심문하기</button><button className="accuse-btn" onClick={() => handleAccuse(s)}>고발하기</button></div></div>); })}</div>
-          </div>
-        )}
-        {activeTab === "notes" && (
-          <div className="notes-panel"><div className="notes-title">📓 탐정 수첩</div>{foundClues.length === 0 ? <div className="note-empty">아직 수집된 단서가 없습니다.</div> : CASE.clues.filter(c => foundClues.includes(c.id)).map(c => (<div key={c.id} className="note-entry"><div className="note-clue">{c.icon} {c.title}</div><div className="note-detail">{c.detail}</div></div>))}</div>
-        )}
+
+        {/* 오른쪽 패널: 수첩 (단서) */}
+        <div className="right-panel">
+          <div className="panel-title">탐정 수첩 ({foundClues.length}개 확보)</div>
+          {foundClues.map(id => {
+            const c = CLUES[id];
+            return (
+              <div key={id} className="note-entry">
+                <div className="note-head">{c.icon} {c.title}</div>
+                <div className="note-body">{c.short}</div>
+              </div>
+            );
+          })}
+          {foundClues.length === 0 && <p style={{fontSize:'12px', color:'var(--dim)'}}>단서를 찾아보세요.</p>}
+        </div>
+
       </div>
-      {selectedClue && (<div className="modal-overlay" onClick={() => setSelectedClue(null)}><div className="modal-box" onClick={e => e.stopPropagation()}><button className="modal-close" onClick={() => setSelectedClue(null)}>✕</button><div className="modal-icon">{selectedClue.icon}</div><div className="modal-title">{selectedClue.title}</div><div className="modal-text">{selectedClue.detail}</div><div className="modal-note">✓ 수첩에 기록됨</div></div></div>)}
-      {accuseTarget && (<div className="modal-overlay" onClick={() => setAccuseTarget(null)}><div className="modal-box confirm-modal" onClick={e => e.stopPropagation()}><div className="confirm-title">최종 고발</div><div style={{fontSize:13,color:'var(--dim)'}}>당신은 범인으로 지목합니다:</div><div className="confirm-name">{accuseTarget.avatar} {accuseTarget.name}</div><div className="confirm-text">틀릴 경우 기회가 차감됩니다. ({lives}회 남음)<br/>확신합니까?</div><div className="confirm-btns"><button className="btn-yes" onClick={confirmAccuse}>고발한다</button><button className="btn-no" onClick={() => setAccuseTarget(null)}>취소</button></div></div></div>)}
-      {interrogating && (<div className="modal-overlay" onClick={() => setInterrogating(null)}><div className="modal-box interrogation-modal" onClick={e => e.stopPropagation()}><button className="modal-close" onClick={() => setInterrogating(null)}>✕</button><div className="interro-header"><div style={{fontSize:32,marginBottom:8}}>{interrogating.avatar}</div><div className="interro-name">{interrogating.name}</div><div className="interro-role">{interrogating.role}</div></div><div className="chat-area scrollbar-custom">{(chatHistory[interrogating.id] || []).length === 0 && <div className="chat-msg" style={{color:'var(--dim)',fontStyle:'italic',fontSize:12}}>심문을 시작하십시오. 아래 질문을 선택하세요.</div>}{(chatHistory[interrogating.id] || []).map((m, i) => <div key={i} className={`chat-msg ${m.role}`}>{m.text}</div>)}{loading && <div className="chat-msg loading">...생각하는 중</div>}<div ref={chatEndRef} /></div><div className="question-list">{QUESTIONS[interrogating.id]?.map((q, i) => { const asked = (askedQuestions[interrogating.id] || []).includes(q); return (<button key={i} className={`q-btn ${asked ? "asked" : ""}`} disabled={asked || loading} onClick={() => handleQuestion(interrogating, q)}>{asked ? "✓ " : "▶ "}{q}</button>); })}</div></div></div>)}
+
+      {/* 모달: 단서 상세 */}
+      {selectedClue && (
+        <div className="modal-overlay" onClick={()=>setSelectedClue(null)}>
+          <div className="modal-content" onClick={e=>e.stopPropagation()}>
+            <button className="close-btn" onClick={()=>setSelectedClue(null)}>✕</button>
+            <h2 style={{color:'var(--ice)', marginBottom:'10px'}}>{selectedClue.icon} {selectedClue.title}</h2>
+            <p style={{fontSize:'13px', color:'var(--paper)', lineHeight:1.6}}>{selectedClue.detail}</p>
+          </div>
+        </div>
+      )}
+
+      {/* 모달: 심문 창 */}
+      {interrogating && (
+        <div className="modal-overlay" onClick={()=>setInterrogating(null)}>
+          <div className="modal-content" onClick={e=>e.stopPropagation()} style={{width:'500px'}}>
+            <button className="close-btn" onClick={()=>setInterrogating(null)}>✕</button>
+            <h2 style={{color:'var(--ice)', marginBottom:'15px'}}>{interrogating.avatar} {interrogating.name} 심문</h2>
+            
+            <div className="chat-box">
+              <p style={{color:'var(--dim)'}}>{interrogating.baseDialogue.greet}</p>
+              {(chatHistory[interrogating.id]||[]).map((c, i) => (
+                <div key={i} style={{marginTop:'10px'}}>
+                  <div style={{color:'var(--ice)'}}>▶ {c.q}</div>
+                  <div style={{color:'var(--paper)', marginLeft:'15px'}}>"{c.a}"</div>
+                </div>
+              ))}
+            </div>
+
+            <div>
+              {interrogating.questions.map(q => {
+                const asked = (askedQ[interrogating.id]||[]).includes(q.id);
+                const canAsk = q.requires.every(r => foundClues.includes(r));
+                return (
+                  <button key={q.id} className="q-btn" disabled={asked || !canAsk} onClick={()=>askQuestion(interrogating, q)}>
+                    {asked ? "✓ " : canAsk ? "Q. " : "🔒 "}{q.text}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
