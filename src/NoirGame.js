@@ -10,7 +10,7 @@ const LOCATIONS = {
     name: "산장 주인의 서재",
     icon: "📖",
     desc: "안에서 굳게 잠겨 있던 밀실. 펄펄 끓는 온풍기 열기와 시신의 피비린내가 섞여 있다.",
-    bg: "#101620", // 차가운 네이비톤
+    bg: "#101620", 
     hotspots: [
       { id: "body", x: 45, y: 55, label: "주인의 시신", icon: "💀" },
       { id: "heater", x: 20, y: 40, label: "온풍기", icon: "♨️" },
@@ -162,7 +162,6 @@ const SUSPECTS = [
   }
 ];
 
-// 스타일 정의 (설화장 테마의 차가운 CSS)
 const S = `
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Courier+Prime&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -174,7 +173,6 @@ const S = `
   html,body{background:var(--bg);height:100%;}
   .root{min-height:100vh;background:var(--bg);font-family:'Courier Prime',monospace;color:var(--paper);overflow-x:hidden;}
   
-  /* 눈 내리는 애니메이션 */
   .snow{position:fixed;inset:0;pointer-events:none;z-index:0;
     background-image: 
     radial-gradient(4px 4px at 20px 30px, #fff, rgba(0,0,0,0)),
@@ -185,7 +183,6 @@ const S = `
     animation: snowfall 4s linear infinite; opacity: 0.3;}
   @keyframes snowfall{from{background-position:0 0;}to{background-position: 20px 150px;}}
 
-  /* 레이아웃 및 UI (원안 기반 색상 변경) */
   .game{display:grid;grid-template-columns:220px 1fr 260px;min-height:100vh; position:relative; z-index:1;}
   .left-panel, .right-panel{background:rgba(10,15,25,0.8); border-color:var(--border); padding:16px;}
   .panel-title{font-size:11px; color:var(--ice); border-bottom:1px solid var(--border); margin-bottom:10px; padding-bottom:5px; font-weight:bold;}
@@ -274,7 +271,7 @@ export default function SnowCabinGame() {
           <div className="scene-canvas">
             <div style={{position:'absolute', inset:0, background:loc.bg}} />
             {loc.hotspots.map(hs => (
-              <div key={hs.id} className={`hotspot ${foundClues.includes(hs.id)?'found':''}`} style={{left:\`\${hs.x}%\`, top:\`\${hs.y}%\`}} onClick={()=>handleHotspot(hs.id)}>
+              <div key={hs.id} className={`hotspot ${foundClues.includes(hs.id)?'found':''}`} style={{left: `${hs.x}%`, top: `${hs.y}%`}} onClick={()=>handleHotspot(hs.id)}>
                 <div className="hotspot-inner">{hs.icon}</div>
               </div>
             ))}
