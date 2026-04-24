@@ -20,28 +20,17 @@ const CLUES_DATA = {
 };
 
 const HOTSPOTS = [
-  // 1등 선실 (피해자 김밀수 방)
   { id: "c_key", x: 45, y: 70, label: "피해자 시신", icon: "💀", loc: "loc_victim", type: "clue" },
   { id: "c_threat", x: 25, y: 30, label: "구겨진 종이", icon: "📄", loc: "loc_victim", type: "clue" },
   { id: "c_contract", x: 70, y: 40, label: "잠긴 금고", icon: "🔒", loc: "loc_victim", type: "locked", reqItem: "c_safe_key", lockMsg: "굳게 잠겨있다. 열쇠가 필요하다." },
-  
-  // 3등 선실 (이무역 방)
   { id: "c_file", x: 50, y: 60, label: "매트리스 밑", icon: "🛏️", loc: "loc_suspect1", type: "clue" },
   { id: "c_wax_hand", x: 20, y: 40, label: "젖은 외투", icon: "🧥", loc: "loc_suspect1", type: "clue" },
-  
-  // 조종실 (최항해)
   { id: "c_log", x: 60, y: 50, label: "조타수 책상", icon: "📔", loc: "loc_control", type: "clue" },
   { id: "c_wax_box", x: 30, y: 30, label: "예비 열쇠함", icon: "🔑", loc: "loc_control", type: "clue" },
-  
-  // 로비 & 공연장
   { id: "c_foot", x: 40, y: 75, label: "바닥 발자국", icon: "👣", loc: "loc_lobby", type: "clue" },
   { id: "c_list", x: 70, y: 30, label: "게시판 명단", icon: "📋", loc: "loc_lobby", type: "clue" },
   { id: "c_memo", x: 20, y: 60, label: "떨어진 수첩", icon: "📓", loc: "loc_lobby", type: "clue" },
-  
-  // 권부인 객실
   { id: "c_safe_key", x: 50, y: 50, label: "화장대", icon: "🗝️", loc: "loc_wife", type: "clue" },
-  
-  // 갑판
   { id: "c_sound", x: 80, y: 40, label: "갑판 난간", icon: "🌊", loc: "loc_deck", type: "clue", isTestimony: true }
 ];
 
@@ -98,31 +87,24 @@ const SUSPECTS = [
 // SVG 배 평면도 (Blueprint)
 const ShipBlueprint = ({ currentLoc }) => (
   <svg width="100%" height="100%" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet" style={{ pointerEvents: 'none' }}>
-    {/* 배 외곽선 */}
     <path d="M 100 300 Q 150 100 500 100 Q 850 100 900 300 Q 850 500 500 500 Q 150 500 100 300 Z" fill="none" stroke="#2b5278" strokeWidth="4" />
     <text x="450" y="70" fill="#2b5278" fontSize="24" fontFamily="monospace" fontWeight="bold">여객선 '해연호' 평면도</text>
     
-    {/* 1등 선실 (피해자 방) */}
     <rect x="300" y="150" width="150" height="120" fill={currentLoc === 'loc_victim' ? "rgba(92,184,255,0.2)" : "transparent"} stroke="#5cb8ff" strokeWidth="2" />
     <text x="310" y="180" fill="#5cb8ff" fontSize="16">1등 선실 (밀실)</text>
     
-    {/* 권부인 객실 */}
     <rect x="470" y="150" width="120" height="120" fill={currentLoc === 'loc_wife' ? "rgba(92,184,255,0.2)" : "transparent"} stroke="#5cb8ff" strokeWidth="2" />
     <text x="480" y="180" fill="#5cb8ff" fontSize="16">1등실 (부인)</text>
 
-    {/* 3등 선실 (이무역 방) */}
     <rect x="250" y="350" width="180" height="100" fill={currentLoc === 'loc_suspect1' ? "rgba(92,184,255,0.2)" : "transparent"} stroke="#5cb8ff" strokeWidth="2" />
     <text x="260" y="380" fill="#5cb8ff" fontSize="16">3등 선실 (이무역)</text>
 
-    {/* 로비 & 공연장 */}
     <rect x="450" y="350" width="200" height="100" fill={currentLoc === 'loc_lobby' ? "rgba(92,184,255,0.2)" : "transparent"} stroke="#5cb8ff" strokeWidth="2" />
     <text x="460" y="380" fill="#5cb8ff" fontSize="16">로비 / 공연장</text>
 
-    {/* 조종실 */}
     <rect x="700" y="250" width="120" height="100" fill={currentLoc === 'loc_control' ? "rgba(92,184,255,0.2)" : "transparent"} stroke="#5cb8ff" strokeWidth="2" />
     <text x="710" y="280" fill="#5cb8ff" fontSize="16">조종실 (선교)</text>
 
-    {/* 갑판 (Deck) */}
     <path d="M 150 280 L 280 280 M 150 320 L 280 320" stroke="#ff4444" strokeWidth="3" strokeDasharray="5,5" />
     <text x="160" y="270" fill="#ff4444" fontSize="14">갑판 (투척 지점)</text>
   </svg>
@@ -187,7 +169,7 @@ const S = `
 `;
 
 export default function SeaNoirGameV5() {
-  const [phase, setPhase] = useState("intro"); // intro, suspects, game, verdict
+  const [phase, setPhase] = useState("intro");
   const [curLocation, setCurLocation] = useState("loc_victim");
   const [clues, setClues] = useState([]);
   const [activeTab, setActiveTab] = useState("notebook");
@@ -199,7 +181,6 @@ export default function SeaNoirGameV5() {
   const [accuseTarget, setAccuseTarget] = useState(null);
 
   const handleHotspotClick = (hs) => {
-    // 권부인의 증언 획득 이벤트 (특수)
     if (hs.isTestimony) {
       if (!clues.includes(hs.id)) {
         setClues([...clues, hs.id]);
@@ -207,8 +188,6 @@ export default function SeaNoirGameV5() {
       }
       return;
     }
-
-    // 잠긴 단서 처리 (금고)
     if (hs.type === "locked") {
       if (clues.includes(hs.id)) return;
       if (clues.includes(hs.reqItem)) {
@@ -219,8 +198,6 @@ export default function SeaNoirGameV5() {
       }
       return;
     }
-
-    // 일반 단서 획득
     if (hs.type === "clue" && !clues.includes(hs.id)) {
       setClues([...clues, hs.id]);
       setAlertMsg({ title: "단서 발견", text: CLUES_DATA[hs.id].title + "을(를) 수첩에 기록했다." });
@@ -234,7 +211,12 @@ export default function SeaNoirGameV5() {
     setChatHistory(p => ({ ...p, [sid]: [...(p[sid] || []), { q: q.text, a: q.answer, isConfess }] }));
   };
 
-  // 1. 인트로 화면
+  // 💡 [버그 수정 완료]: 고발 시 타겟 지정 후 바로 'verdict' 페이즈로 전환
+  const handleAccuse = (suspect) => {
+    setAccuseTarget(suspect);
+    setPhase("verdict");
+  };
+
   if (phase === "intro") return (
     <div className="root"><style>{S}</style>
       <div className="fullscreen">
@@ -250,7 +232,6 @@ export default function SeaNoirGameV5() {
     </div>
   );
 
-  // 2. 인물 소개 화면
   if (phase === "suspects") return (
     <div className="root"><style>{S}</style>
       <div className="fullscreen">
@@ -276,7 +257,6 @@ export default function SeaNoirGameV5() {
     </div>
   );
 
-  // 4. 엔딩 화면
   if (phase === "verdict") return (
     <div className="root"><style>{S}</style>
       <div className="fullscreen">
@@ -293,12 +273,10 @@ export default function SeaNoirGameV5() {
     </div>
   );
 
-  // 3. 메인 게임 화면
   return (
     <div className="root"><style>{S}</style>
       <div className="game-layout">
         
-        {/* 네비게이션 패널 */}
         <div className="nav-panel">
           <div style={{padding:'20px', color:'#5cb8ff', fontWeight:'bold', borderBottom:'1px solid #2b5278', fontSize:'12px', letterSpacing:'2px'}}>탐색 구역 이동</div>
           <button className={`nav-btn ${curLocation === 'loc_victim' ? 'active' : ''}`} onClick={() => setCurLocation('loc_victim')}>1등 선실 (피해자)</button>
@@ -309,7 +287,6 @@ export default function SeaNoirGameV5() {
           <button className={`nav-btn ${curLocation === 'loc_deck' ? 'active' : ''}`} onClick={() => setCurLocation('loc_deck')}>바깥 갑판</button>
         </div>
 
-        {/* 맵 (도면) 영역 */}
         <div className="map-area">
           <div style={{position:'absolute', inset:'20px'}}>
             <ShipBlueprint currentLoc={curLocation} />
@@ -323,7 +300,6 @@ export default function SeaNoirGameV5() {
           </div>
         </div>
 
-        {/* 우측 탭 패널 */}
         <div className="side-panel">
           <div className="tab-header">
             <button className={`tab-btn ${activeTab === 'notebook' ? 'active' : ''}`} onClick={() => setActiveTab('notebook')}>탐정 수첩 ({clues.length}/12)</button>
@@ -355,7 +331,8 @@ export default function SeaNoirGameV5() {
                       </div>
                     </div>
                     <button className="btn-interrogate" onClick={() => setInterrogating(s)}>심문 시작</button>
-                    {clues.length >= 8 && <button className="btn-accuse" onClick={() => setAccuseTarget(s)}>이 자를 진범으로 고발</button>}
+                    {/* 💡 [버그 수정 완료]: 클릭 시 handleAccuse 함수를 호출하여 화면 전환! */}
+                    {clues.length >= 8 && <button className="btn-accuse" onClick={() => handleAccuse(s)}>이 자를 진범으로 고발</button>}
                   </div>
                 ))}
                 {clues.length < 8 && <p style={{color:'#ff4444', fontSize:'12px', textAlign:'center', marginTop:'10px'}}>단서를 8개 이상 모아야 범인 고발이 가능합니다.</p>}
@@ -365,7 +342,6 @@ export default function SeaNoirGameV5() {
         </div>
       </div>
 
-      {/* 모달: 시스템 알림 */}
       {alertMsg && (
         <div className="modal-overlay">
           <div className="modal-box" style={{width:'400px', textAlign:'center'}}>
@@ -376,7 +352,6 @@ export default function SeaNoirGameV5() {
         </div>
       )}
 
-      {/* 모달: 심문 창 */}
       {interrogating && (
         <div className="modal-overlay" onClick={() => setInterrogating(null)}>
           <div className="modal-box" onClick={e=>e.stopPropagation()}>
