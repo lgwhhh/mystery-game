@@ -114,7 +114,7 @@ const S = `
   @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&family=Courier+Prime&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
   body{background:#03080f; color:#e6edf2; font-family:'Courier Prime', 'Noto Serif KR', serif; overflow-x:hidden;}
-  
+  .storm-bg { position:absolute; inset:0; background: url('/bg_storm.png') center/cover no-repeat; z-index:1; pointer-events:none; opacity: 0.35;}
   .fullscreen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; text-align:center; padding:20px; background:#03080f; position:relative; overflow:hidden;}
   .storm-bg { position:absolute; inset:0; background: radial-gradient(circle at 50% 50%, transparent, #000 80%); z-index:1; pointer-events:none;}
   .lightning { position:absolute; inset:0; background:white; opacity:0; z-index:0; animation: flash 8s infinite; pointer-events:none;}
